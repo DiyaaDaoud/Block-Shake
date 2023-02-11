@@ -1,0 +1,10 @@
+.next
+front-end/.next
+front-end/node_modules
+front-end/next-env.d.ts
+front-end/yarn-error.log
+hardhat/artifacts
+hardhat/cache
+hardhat/node_modules
+hardhat/.env
+hardhat/yarn.lock

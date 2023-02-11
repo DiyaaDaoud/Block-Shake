@@ -1,0 +1,124 @@
+.container {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8px;
+  margin: 16px;
+  border-radius: 10px;
+  box-shadow: 0 0 14px rgba(0, 0, 0, 0.02), 0 5px 5px rgba(0, 0, 0, 0.04);
+  width: 95%;
+  height: 90%;
+  justify-content: flex-start;
+  position: fixed;
+  border-radius: 16px;
+  /* border: 1px solid rgb(0, 0, 0); */
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+.postAndAddCommentContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 12px;
+  width: 50%;
+  max-height: 95%;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+.addCommentContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  justify-content: center;
+  border: 1px solid rgb(0, 0, 0);
+  border-radius: 16px;
+  margin: auto;
+  padding-right: 5px;
+  margin-bottom: 10px;
+  background-color: whitesmoke;
+}
+
+.formContainer {
+  display: flex;
+  justify-content: left;
+  width: 100%;
+  flex-direction: row;
+  align-items: center;
+}
+
+.chooseFileContainer {
+  padding: 10px;
+  margin: 16px;
+  border-radius: 16px;
+  border: 1px solid rgb(0, 0, 0);
+  min-width: fit-content;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+.tilteContainer {
+  padding: 10px;
+  margin: 16px;
+  border-radius: 16px;
+  border: 1px solid rgb(0, 0, 0);
+  width: 100%;
+}
+.contentContainer {
+  padding: 10px;
+  margin: 16px;
+  border-radius: 16px;
+  border: 1px solid rgb(0, 0, 0);
+  width: 100%;
+  height: 100px;
+}
+.descriptionContainer {
+  padding: 10px;
+  margin: 16px;
+  border-radius: 16px;
+  border: 1px solid rgb(0, 0, 0);
+  width: 100%;
+  height: 100px;
+}
+.createButton {
+  background-color: rgb(87, 30, 96);
+  border-radius: 16px;
+  width: 100%;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+.publicationContainer {
+  /* Container for all the posts with a max width */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-height: 40%;
+  padding-top: 16px;
+}
+.commentContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  left: 0;
+  width: 80%;
+}
+
+.hint {
+  padding-top: 16px;
+  padding-left: 16px;
+}
+.commentsContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  overflow-y: scroll;
+  overflow-x: hidden;
+  margin: 16px;
+  max-height: 95%;
+  width: 50%;
+}
