@@ -44,7 +44,7 @@ export default function Home() {
       refetchOnWindowFocus: false,
     }
   );
-  console.log("user filter: ", userfilter);
+  // console.log("user filter: ", userfilter);
   const [sortToShow, setSortToShow] = useState<PublicationSortCriteria>(
     PublicationSortCriteria.Latest
   );
@@ -54,16 +54,16 @@ export default function Home() {
   );
   //
   // let prevsortToShow: PublicationSortCriteria = PublicationSortCriteria.Latest;
-  console.log("sort to show: ", sortToShow);
-  console.log("prevsortToShow: ", prevsortToShow);
-  console.log("dataToShow: ", dataToShow);
+  // console.log("sort to show: ", sortToShow);
+  // console.log("prevsortToShow: ", prevsortToShow);
+  // console.log("dataToShow: ", dataToShow);
   const [update, setUpdate] = useState<boolean>(false);
   async function updatUI() {
     if (dataToShow == null || (dataToShow && userfilter != prevsortToShow)) {
-      console.log("in 0 ");
+      // console.log("in 0 ");
 
       setSortToShow(userfilter);
-      console.log("in 1 ");
+      // console.log("in 1 ");
       const exploreQuery = fetcher<
         ExplorePublicationsQuery,
         ExplorePublicationsQueryVariables
@@ -74,13 +74,13 @@ export default function Home() {
         },
       });
       const newData = await exploreQuery();
-      console.log("in 2 ");
+      // console.log("in 2 ");
 
       setDataToShow(newData);
-      console.log("in 3 ");
+      // console.log("in 3 ");
 
       setprevSortToShow(userfilter);
-      console.log("in 5 ");
+      // console.log("in 5 ");
 
       return;
       // console.log("newData: ", newData);

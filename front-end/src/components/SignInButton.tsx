@@ -56,17 +56,17 @@ export default function SignInButton({}: Props) {
   let profileNotifications: NotificationsQuery | undefined =
     readNotifications(address);
   let customSeenNotifications = readSeenNotifications(address);
-  // console.log("         address: ", address);
-  // console.log("         currentUser: ", currentUser);
-  // console.log("         notifs: ", notifs);
-  // console.log("         notifsNum: ", notifsNum);
-  // console.log("         seenNotifsNum: ", seenNotifsNum);
-  // console.log("         customProfileQuery: ", customProfileQuery);
-  // console.log("         profileNotifications: ", profileNotifications);
-  // console.log("         customSeenNotifications: ", customSeenNotifications);
-  // console.log("         isSignedInQuery.data: ", isSignedInQuery.data);
-  // console.log("         accessToken: ", accessToken);
-  // console.log("----------------------------------------------------------");
+  console.log("         address: ", address);
+  console.log("         currentUser: ", currentUser);
+  console.log("         notifs: ", notifs);
+  console.log("         notifsNum: ", notifsNum);
+  console.log("         seenNotifsNum: ", seenNotifsNum);
+  console.log("         customProfileQuery: ", customProfileQuery);
+  console.log("         profileNotifications: ", profileNotifications);
+  console.log("         customSeenNotifications: ", customSeenNotifications);
+  console.log("         isSignedInQuery.data: ", isSignedInQuery.data);
+  console.log("         accessToken: ", accessToken);
+  console.log("----------------------------------------------------------");
 
   async function updateNotifs() {
     if (customProfileQuery !== undefined && customProfileQuery.defaultProfile) {
