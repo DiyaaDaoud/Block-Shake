@@ -16,7 +16,9 @@ import {
 } from "../constants/contracts";
 import { fetcher } from "../graphql/auth-fetcher";
 import {
+  DefaultProfileDocument,
   DefaultProfileQuery,
+  DefaultProfileQueryVariables,
   NotificationsDocument,
   NotificationsQuery,
   NotificationsQueryVariables,
@@ -25,6 +27,14 @@ import { deleteAccessToken, readAccessToken } from "../lib/auth/helpers";
 import refreshAccessToken from "../lib/auth/refreshAccessToken";
 import useLensUser from "../lib/auth/useLensUser";
 import useLogin from "../lib/auth/useLogin";
+import {
+  readNotifications,
+  readProfileQuery,
+  readSeenNotifications,
+  storeNotifications,
+  storeProfileQuery,
+  storeSeenNotifications,
+} from "../lib/helpers";
 import useGetNotifications from "../lib/useGetNotifications";
 import styles from "../styles/SignIn.module.css";
 type Props = {};
@@ -37,52 +47,95 @@ export default function SignInButton({}: Props) {
   const { mutate: requestLogin } = useLogin();
   let { isSignedInQuery, profileQuery } = useLensUser();
   const [notifs, setNotifs] = useState<NotificationsQuery | null>();
-  const { mutateAsync: getNotifs } = useGetNotifications();
-  // const [defaultProfile, setDefaultProfile] = useState<DefaultProfileQuery>();
-  const [currentNotifications, setCurrentNotifications] =
-    useState<NotificationsQuery>();
   const [notifsNum, setNotifsNum] = useState<number | null>(null);
   const [currentUser, setCurrentUser] = useState<string>("FirstTimeUser");
   const [seenNotifsNum, setSeenNotifsNum] = useState<number>();
   let accessToken = readAccessToken();
-  async function updateUI() {
-    accessToken = readAccessToken();
-    if (!accessToken) {
-      console.log(notifs);
-      console.log("no access token!");
-      setNotifs(null);
-      return;
-    }
-    if (!address) return;
-    if (!sdk) return;
-    if (!profileQuery?.data?.defaultProfile) return;
-    if (currentUser != address) {
-      if (currentUser == "FirstTimeUser") {
-        setCurrentUser(address);
+  let customProfileQuery: DefaultProfileQuery | undefined =
+    readProfileQuery(address);
+  let profileNotifications: NotificationsQuery | undefined =
+    readNotifications(address);
+  let customSeenNotifications = readSeenNotifications(address);
+  // console.log("         address: ", address);
+  // console.log("         currentUser: ", currentUser);
+  // console.log("         notifs: ", notifs);
+  // console.log("         notifsNum: ", notifsNum);
+  // console.log("         seenNotifsNum: ", seenNotifsNum);
+  // console.log("         customProfileQuery: ", customProfileQuery);
+  // console.log("         profileNotifications: ", profileNotifications);
+  // console.log("         customSeenNotifications: ", customSeenNotifications);
+  // console.log("         isSignedInQuery.data: ", isSignedInQuery.data);
+  // console.log("         accessToken: ", accessToken);
+  // console.log("----------------------------------------------------------");
+
+  async function updateNotifs() {
+    if (customProfileQuery !== undefined && customProfileQuery.defaultProfile) {
+      const notsQuery = fetcher<
+        NotificationsQuery,
+        NotificationsQueryVariables
+      >(NotificationsDocument, {
+        request: {
+          profileId: customProfileQuery.defaultProfile.id,
+        },
+      });
+      const newNotifs = await notsQuery();
+      if (!newNotifs.notifications) return;
+      if (
+        newNotifs.notifications &&
+        (profileNotifications == undefined || profileNotifications != newNotifs)
+      ) {
+        profileNotifications = newNotifs;
+        storeNotifications(newNotifs, address);
+        setNotifs(newNotifs);
+        if (newNotifs.notifications.pageInfo.totalCount) {
+          setNotifsNum(newNotifs.notifications.pageInfo.totalCount);
+        } else {
+          setNotifsNum(newNotifs.notifications.items.length);
+        }
         return;
-      } else {
-        console.log("changing the current user.....");
-        deleteAccessToken();
-        setCurrentUser(address);
-        requestLogin();
+      }
+      if (profileNotifications != undefined) {
+        // console.log("inside updateUI: notifs are: ", newNotifs);
+        setNotifs(profileNotifications);
+        setNotifsNum(
+          profileNotifications.notifications.pageInfo.totalCount ||
+            profileNotifications.notifications.items.length
+        );
         return;
       }
     }
-    if (profileQuery.data.defaultProfile.ownedBy != currentUser) {
-      console.log("the profile is not owned by the current user!..");
+  }
+  async function updateCustomProfile() {
+    if (!address) return;
+    if (!sdk) return;
+    if (!isSignedInQuery.data || !accessToken) {
+      console.log("no access token!");
       return;
     }
-    // console.log("in.........");
-    const notsQuery = fetcher<NotificationsQuery, NotificationsQueryVariables>(
-      NotificationsDocument,
-      { request: { profileId: profileQuery.data.defaultProfile.id } }
-    );
-    const newNotifs = await notsQuery();
-    if (newNotifs.notifications) {
-      // console.log("inside updateUI: notifs are: ", newNotifs);
-      setNotifs(newNotifs);
-      setNotifsNum(newNotifs.notifications.items.length);
+    customProfileQuery = readProfileQuery(address);
+    if (currentUser != address) {
+      setCurrentUser(address);
+      return;
     }
+    const refreshedAccessToken = await refreshAccessToken();
+    if (!refreshedAccessToken) return;
+    if (customProfileQuery == undefined) {
+      if (profileQuery.isLoading || profileQuery.isError || !profileQuery.data)
+        return;
+      customProfileQuery = profileQuery.data;
+      storeProfileQuery(profileQuery.data, address);
+    }
+    if (profileQuery.data && customProfileQuery != profileQuery.data) {
+      customProfileQuery = profileQuery.data;
+      storeProfileQuery(profileQuery.data, address);
+    }
+  }
+  async function updateSeenNotifs() {
+    if (customSeenNotifications !== undefined) {
+      setSeenNotifsNum(customSeenNotifications);
+      return;
+    }
+    if (!sdk) return;
     const notificationsContract = await sdk.getContractFromAbi(
       NOTIFICATIONS_HELPER_ADDRESS,
       NOTIFICATIONS_HELPER_ABI
@@ -91,17 +144,24 @@ export default function SignInButton({}: Props) {
       "getSeenNotifications",
       address
     );
-    if (notifsFromContract) setSeenNotifsNum(notifsFromContract);
+    if (notifsFromContract) {
+      customSeenNotifications = notifsFromContract;
+      storeSeenNotifications(notifsFromContract, address);
+      setSeenNotifsNum(notifsFromContract);
+    }
   }
   useEffect(() => {
-    updateUI();
-  });
+    updateCustomProfile();
+  }, [customProfileQuery, currentUser, address]);
+  useEffect(() => {
+    updateNotifs();
+  }, [profileNotifications, notifs, notifsNum]);
+  useEffect(() => {
+    updateSeenNotifs();
+  }, [customSeenNotifications, seenNotifsNum]);
+
   if (!address) {
     return <ConnectWallet colorMode="light" className={styles.connectButton} />;
-  }
-  refreshAccessToken();
-  if (address != currentUser && currentUser != "FirstTimeUser") {
-    requestLogin();
   }
   if (isOnWrongNetwork) {
     return (
@@ -115,12 +175,18 @@ export default function SignInButton({}: Props) {
       </button>
     );
   }
-  if (!isSignedInQuery.data) {
+  accessToken = readAccessToken();
+  if (
+    (!isSignedInQuery.data &&
+      !isSignedInQuery.isLoading &&
+      !isSignedInQuery.isError) ||
+    !accessToken
+  ) {
     return (
       <div className={styles.container}>
         <button
           className={styles.button}
-          onClick={async () => {
+          onClick={() => {
             requestLogin();
             setCurrentUser(address);
           }}
@@ -133,15 +199,22 @@ export default function SignInButton({}: Props) {
       </div>
     );
   }
-  if (isSignedInQuery.isLoading) {
-    return <div className={styles.hint}>Loading Sign In ... please wait</div>;
+  if (
+    isSignedInQuery.data &&
+    accessToken &&
+    address != currentUser &&
+    currentUser != "FirstTimeUser"
+  ) {
+    console.log("innnnnnnnnnnnnnnnnnn");
+    const ls = window.localStorage;
+    ls.removeItem("LH_STORAGE_KEY");
   }
 
-  if (profileQuery.isLoading) {
+  if (customProfileQuery == undefined && profileQuery.isLoading) {
     return <div className={styles.hint}>Loading profile.. please wait</div>;
   }
 
-  if (!profileQuery.data?.defaultProfile) {
+  if (customProfileQuery == undefined && !profileQuery.data?.defaultProfile) {
     return (
       <div>
         <Link href={"/createProfile"}>
@@ -150,24 +223,23 @@ export default function SignInButton({}: Props) {
       </div>
     );
   }
-
-  if (profileQuery.data.defaultProfile) {
+  if (customProfileQuery?.defaultProfile) {
     return (
       <div className={styles.container}>
-        <Link href={`/profile/${profileQuery.data.defaultProfile?.handle}`}>
+        <Link href={`/profile/${customProfileQuery.defaultProfile?.handle}`}>
           {/** @ts-ignore */}
-          {profileQuery.data.defaultProfile.picture?.original ? (
+          {customProfileQuery.defaultProfile.picture?.original ? (
             <Tooltip
               title={
-                profileQuery.data.defaultProfile.handle
-                  ? profileQuery.data.defaultProfile.handle
+                customProfileQuery.defaultProfile.handle
+                  ? customProfileQuery.defaultProfile.handle
                   : "profile pic"
               }
             >
               <MediaRenderer
                 // @ts-ignore
-                src={profileQuery.data.defaultProfile.picture?.original?.url}
-                alt={profileQuery.data.defaultProfile.handle}
+                src={customProfileQuery.defaultProfile.picture?.original?.url}
+                alt={customProfileQuery.defaultProfile.handle}
                 style={{
                   width: 48,
                   height: 48,
@@ -178,8 +250,8 @@ export default function SignInButton({}: Props) {
           ) : (
             <Tooltip
               title={
-                profileQuery.data.defaultProfile.handle
-                  ? profileQuery.data.defaultProfile.handle
+                customProfileQuery.defaultProfile.handle
+                  ? customProfileQuery.defaultProfile.handle
                   : "profile pic"
               }
             >

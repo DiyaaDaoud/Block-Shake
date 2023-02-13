@@ -94,11 +94,15 @@ export default function FeedPost({ publication }: Props) {
       refetchOnWindowFocus: false,
     }
   );
-  let publicationMirrors =
-    mirrorsPublicationsData?.explorePublications.items.filter((mirror) => {
-      // @ts-ignore
-      return mirror.mirrorOf?.id == publication.id;
-    });
+  let publicationMirrors: ExplorePublicationsQuery["explorePublications"]["items"];
+  if (mirrorsPublicationsData?.explorePublications.items) {
+    publicationMirrors =
+      mirrorsPublicationsData?.explorePublications.items.filter((mirror) => {
+        // @ts-ignore
+        return mirror.mirrorOf?.id == publication.id;
+      });
+  }
+
   const [whoReactedDataState, setWhoReactedDataState] =
     useState<WhoReactedPublicationQuery>();
   const [commentsCount, setCommentsCount] = useState<number>(0);
@@ -114,8 +118,8 @@ export default function FeedPost({ publication }: Props) {
   const [downVotesCount, setDownVotesCount] = useState<number>(0);
   const [timePosted, setTimePosted] = useState<string>();
   const [datePosted, setDatePosted] = useState<string>();
-  async function updateUI() {
-    // console.log("inside ");
+
+  async function updateReactions() {
     const reactionQuery = fetcher<
       WhoReactedPublicationQuery,
       WhoReactedPublicationQueryVariables
@@ -123,37 +127,6 @@ export default function FeedPost({ publication }: Props) {
       request: { publicationId: publication.id },
     });
     whoReactedData = await reactionQuery();
-    const commentsQuery = fetcher<
-      PublicationsQuery,
-      PublicationsQueryVariables
-    >(PublicationsDocument, {
-      request: { commentsOf: publication.id },
-    });
-    comments = await commentsQuery();
-
-    const collectsQuery = fetcher<
-      WhoCollectedPublicationQuery,
-      WhoCollectedPublicationQueryVariables
-    >(WhoCollectedPublicationDocument, {
-      request: { publicationId: publication.id },
-    });
-    whoCollectedData = await collectsQuery();
-    const mirrorsQuery = fetcher<
-      ExplorePublicationsQuery,
-      ExplorePublicationsQueryVariables
-    >(ExplorePublicationsDocument, {
-      request: {
-        publicationTypes: [PublicationTypes.Mirror],
-        sortCriteria: PublicationSortCriteria.Latest,
-      },
-    });
-    mirrorsPublicationsData = await mirrorsQuery();
-    publicationMirrors =
-      mirrorsPublicationsData?.explorePublications.items.filter((mirror) => {
-        // @ts-ignore
-        return mirror.mirrorOf?.id == publication.id;
-      });
-
     if (whoReactedData?.whoReactedPublication.items) {
       setWhoReactedDataState(whoReactedData);
       // console.log("isndide updatUI : who reacted: ", whoReactedData);
@@ -199,31 +172,106 @@ export default function FeedPost({ publication }: Props) {
         setLikeSource("/empty-like.png");
       }
     }
+  }
+  async function updateComments() {
+    const commentsQuery = fetcher<
+      PublicationsQuery,
+      PublicationsQueryVariables
+    >(PublicationsDocument, {
+      request: { commentsOf: publication.id },
+    });
+    comments = await commentsQuery();
     if (comments.publications.items) {
-      const commentsCountState = comments.publications.items.length;
+      const commentsCountState =
+        comments.publications.pageInfo.totalCount ||
+        comments.publications.items.length;
       setCommentsCount(commentsCountState);
     }
+  }
+  async function updateCollects() {
+    const collectsQuery = fetcher<
+      WhoCollectedPublicationQuery,
+      WhoCollectedPublicationQueryVariables
+    >(WhoCollectedPublicationDocument, {
+      request: { publicationId: publication.id },
+    });
+    whoCollectedData = await collectsQuery();
     if (whoCollectedData.whoCollectedPublication.items) {
       const collectsCountState =
+        whoCollectedData.whoCollectedPublication.pageInfo.totalCount ||
         whoCollectedData.whoCollectedPublication.items.length;
       setCollectsCount(collectsCountState);
     }
-    if (mirrorsPublicationsData.explorePublications && publicationMirrors) {
-      let mirrorsCountState = publicationMirrors.length;
-      setMirrorsCount(mirrorsCountState);
+  }
+  async function updateMirrors() {
+    const mirrorsQuery = fetcher<
+      ExplorePublicationsQuery,
+      ExplorePublicationsQueryVariables
+    >(ExplorePublicationsDocument, {
+      request: {
+        publicationTypes: [PublicationTypes.Mirror],
+        sortCriteria: PublicationSortCriteria.Latest,
+      },
+    });
+    mirrorsPublicationsData = await mirrorsQuery();
+    let customPublicationMirrors;
+    if (mirrorsPublicationsData.explorePublications.items) {
+      customPublicationMirrors =
+        mirrorsPublicationsData?.explorePublications.items.filter((mirror) => {
+          // @ts-ignore
+          return mirror.mirrorOf?.id == publication.id;
+        });
     }
-    const timePostedString = publication.createdAt;
-    if (timePostedString) {
-      const date = timePostedString.slice(0, 10);
-      const time = timePostedString.slice(11, 19);
-      // console.log("date: ", date, " time: ", time);
-      setTimePosted(time);
-      setDatePosted(date);
+    if (customPublicationMirrors) {
+      if (publicationMirrors) {
+        if (customPublicationMirrors.length > publicationMirrors.length)
+          setMirrorsCount(customPublicationMirrors.length);
+        else {
+          setMirrorsCount(publicationMirrors.length);
+        }
+      } else {
+        publicationMirrors = customPublicationMirrors;
+        setMirrorsCount(customPublicationMirrors.length);
+      }
+    }
+  }
+
+  async function updateCreationTime() {
+    if (timePosted == undefined || datePosted == undefined) {
+      const timePostedString = publication.createdAt;
+      if (timePostedString) {
+        const date = timePostedString.slice(0, 10);
+        const time = timePostedString.slice(11, 19);
+        // console.log("date: ", date, " time: ", time);
+        setTimePosted(time);
+        setDatePosted(date);
+      }
     }
   }
   useEffect(() => {
-    updateUI();
-  }, [whoReactedDataState, isSignedInQuery.data, commentsCount, collectsCount]);
+    updateReactions();
+  }, [
+    whoReactedDataState,
+    hasReacted,
+    userReaction,
+    likeSource,
+    dislikeSource,
+    upVotesCount,
+    downVotesCount,
+  ]);
+  useEffect(() => {
+    updateComments();
+  }, [comments, commentsCount]);
+  useEffect(() => {
+    updateCollects();
+  }, [whoCollectedData, collectsCount]);
+  useEffect(() => {
+    updateMirrors();
+  }, [mirrorsPublicationsData, mirrorsCount]);
+  useEffect(() => {
+    updateCreationTime();
+  }, [datePosted, timePosted]);
+
   return (
     <div className={styles.feedPostContainer}>
       <div className={styles.feedPostHeader}>

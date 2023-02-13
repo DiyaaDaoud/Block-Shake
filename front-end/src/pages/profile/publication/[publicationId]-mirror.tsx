@@ -62,7 +62,7 @@ export default function publicationMerrorsPage() {
       refetchOnWindowFocus: false,
     }
   );
-  //   console.log("mirrorsData: ", mirrorsData);
+  console.log("publicationDataState: ", publicationDataState);
   // @ts-ignore
   let publicationMirrors = mirrorsData?.explorePublications.items.filter(
     (mirror) => {
@@ -70,7 +70,8 @@ export default function publicationMerrorsPage() {
       return mirror.mirrorOf?.id == publicationId;
     }
   );
-  async function updateUI() {
+
+  async function updatePublication() {
     if (!publicationId) return;
     const publicationQuery = fetcher<
       PublicationQuery,
@@ -79,8 +80,12 @@ export default function publicationMerrorsPage() {
       request: { publicationId: publicationId },
     });
     publicationData = await publicationQuery();
-    console.log("inside updateUI:, publicationData", publicationData);
-
+    if (publicationData.publication) {
+      setPublicationDataState(publicationData);
+    }
+  }
+  async function updateMirrors() {
+    if (!publicationId) return;
     const mirrorsQuery = fetcher<
       ExplorePublicationsQuery,
       ExplorePublicationsQueryVariables
@@ -91,24 +96,69 @@ export default function publicationMerrorsPage() {
       },
     });
     mirrorsData = await mirrorsQuery();
-    console.log("inside updateUI:, mirrorsData", mirrorsData);
-    publicationMirrors = mirrorsData?.explorePublications.items.filter(
-      (mirror) => {
+    // console.log("inside updateUI:, mirrorsData", mirrorsData);
+    const customPublicationMirrors =
+      mirrorsData?.explorePublications.items.filter((mirror) => {
         // @ts-ignore
         return mirror.mirrorOf?.id == publicationId;
-      }
-    );
-    console.log("inside updateUI:, publicationMirrors", publicationMirrors);
-    if (publicationData.publication) {
-      setPublicationDataState(publicationData);
-    }
-    if (mirrorsData.explorePublications && publicationMirrors) {
+      });
+    if (
+      publicationMirrors &&
+      customPublicationMirrors &&
+      customPublicationMirrors.length > publicationMirrors.length
+    ) {
+      publicationMirrors = customPublicationMirrors;
+      setPublicationMirrorsState(customPublicationMirrors);
+    } else {
       setPublicationMirrorsState(publicationMirrors);
     }
   }
+
   useEffect(() => {
-    updateUI();
-  });
+    updatePublication();
+  }, [publicationData, publicationDataState]);
+  useEffect(() => {
+    updateMirrors();
+  }, [publicationMirrors, publicationMirrorsState]);
+  // async function updateUI() {
+  //   if (!publicationId) return;
+  //   const publicationQuery = fetcher<
+  //     PublicationQuery,
+  //     PublicationQueryVariables
+  //   >(PublicationDocument, {
+  //     request: { publicationId: publicationId },
+  //   });
+  //   publicationData = await publicationQuery();
+  //   // console.log("inside updateUI:, publicationData", publicationData);
+
+  //   const mirrorsQuery = fetcher<
+  //     ExplorePublicationsQuery,
+  //     ExplorePublicationsQueryVariables
+  //   >(ExplorePublicationsDocument, {
+  //     request: {
+  //       publicationTypes: [PublicationTypes.Mirror],
+  //       sortCriteria: PublicationSortCriteria.Latest,
+  //     },
+  //   });
+  //   mirrorsData = await mirrorsQuery();
+  //   // console.log("inside updateUI:, mirrorsData", mirrorsData);
+  //   publicationMirrors = mirrorsData?.explorePublications.items.filter(
+  //     (mirror) => {
+  //       // @ts-ignore
+  //       return mirror.mirrorOf?.id == publicationId;
+  //     }
+  //   );
+  //   // console.log("inside updateUI:, publicationMirrors", publicationMirrors);
+  //   if (publicationData.publication) {
+  //     setPublicationDataState(publicationData);
+  //   }
+  //   if (mirrorsData.explorePublications && publicationMirrors) {
+  //     setPublicationMirrorsState(publicationMirrors);
+  //   }
+  // }
+  // useEffect(() => {
+  //   updateUI();
+  // });
 
   if (publicationData?.publication) {
     return (
@@ -147,9 +197,7 @@ export default function publicationMerrorsPage() {
                 })}
               </div>
             ) : (
-              <div className={styles.hint}>
-                Be the first to mirror 🪞 this Post
-              </div>
+              <div className={styles.hint}>No mirrors 🪞 for this Post yet</div>
             )
           ) : (
             <div className={styles.hint}>Loading mirrors of the post</div>

@@ -53,8 +53,8 @@ export default function publicationCollectPage() {
       publicationId: publicationId,
     },
   });
-
-  async function updateUI() {
+  console.log("whoCollectedData: ", whoCollectedData);
+  async function updatePublication() {
     if (!publicationId) return;
     const publicationQuery = fetcher<
       PublicationQuery,
@@ -63,36 +63,85 @@ export default function publicationCollectPage() {
       request: { publicationId: publicationId },
     });
     publicationData = await publicationQuery();
+    if (publicationData.publication) {
+      setPublicationDataState(publicationData);
+    }
+  }
+  async function updateCollectors() {
+    if (!publicationId) return;
     const collectersQuery = fetcher<
       WhoCollectedPublicationQuery,
       WhoCollectedPublicationQueryVariables
     >(WhoCollectedPublicationDocument, {
       request: { publicationId: publicationId },
     });
-    whoCollectedData = await collectersQuery();
-
-    if (publicationData.publication) {
-      setPublicationDataState(publicationData);
-    }
-    if (whoCollectedData.whoCollectedPublication) {
-      setCollectorsState(whoCollectedData);
+    const whoCollectedDataTemp = await collectersQuery();
+    if (whoCollectedDataTemp.whoCollectedPublication.items)
+      whoCollectedData = whoCollectedDataTemp;
+    if (
+      whoCollectedData?.whoCollectedPublication ||
+      whoCollectedDataTemp.whoCollectedPublication
+    ) {
+      setCollectorsState(whoCollectedData || whoCollectedDataTemp);
     }
   }
+  useEffect(() => {
+    updatePublication();
+  }, [publicationData, publicationDataState]);
 
   useEffect(() => {
-    updateUI();
-  });
+    updateCollectors();
+  }, [whoCollectedData, collectorsState]);
+  // async function updateUI() {
+  //   if (!publicationId) return;
+  //   const publicationQuery = fetcher<
+  //     PublicationQuery,
+  //     PublicationQueryVariables
+  //   >(PublicationDocument, {
+  //     request: { publicationId: publicationId },
+  //   });
+  //   publicationData = await publicationQuery();
+  //   const collectersQuery = fetcher<
+  //     WhoCollectedPublicationQuery,
+  //     WhoCollectedPublicationQueryVariables
+  //   >(WhoCollectedPublicationDocument, {
+  //     request: { publicationId: publicationId },
+  //   });
+  //   const whoCollectedDataTemp = await collectersQuery();
+  //   console.log("whoCollectedDataTemp", whoCollectedDataTemp);
+  //   if (whoCollectedDataTemp.whoCollectedPublication.items)
+  //     whoCollectedData = whoCollectedDataTemp;
+
+  //   if (publicationData.publication) {
+  //     setPublicationDataState(publicationData);
+  //   }
+  //   if (
+  //     whoCollectedData?.whoCollectedPublication ||
+  //     whoCollectedDataTemp.whoCollectedPublication
+  //   ) {
+  //     setCollectorsState(whoCollectedData || whoCollectedDataTemp);
+  //   }
+  // }
+
+  // useEffect(() => {
+  //   updateUI();
+  // });
   if (publicationError) return <div>Error loading the pubilcation</div>;
   if (loadingPublication) return <div>Loading publication</div>;
   if (whoCollectedError)
     return <div>Error loading who collected this publication</div>;
   if (loadingWhoCollected)
     return <div>Loadin the users who collected this publication</div>;
-
+  if (
+    !publicationDataState?.publication ||
+    !collectorsState?.whoCollectedPublication.items
+  )
+    return;
   if (
     publicationDataState?.publication &&
     collectorsState?.whoCollectedPublication.items
   ) {
+    console.log("publicationDataState: ", publicationDataState);
     if (
       publicationDataState.publication.collectModule.type ==
       "RevertCollectModule"

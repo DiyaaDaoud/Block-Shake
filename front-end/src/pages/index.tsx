@@ -32,8 +32,11 @@ export default function Home() {
   const { isLoading, error, data } = useExplorePublicationsQuery(
     {
       request: {
-        sortCriteria: userfilter || PublicationSortCriteria.Latest,
+        sortCriteria: userfilter
+          ? userfilter
+          : PublicationSortCriteria.TopCollected,
         publicationTypes: [PublicationTypes.Post],
+        // noRandomize: true,
       },
     },
     {
@@ -41,11 +44,46 @@ export default function Home() {
       refetchOnWindowFocus: false,
     }
   );
+  console.log("user filter: ", userfilter);
+  const [sortToShow, setSortToShow] = useState<PublicationSortCriteria>(
+    PublicationSortCriteria.Latest
+  );
+  // let sortToShow: PublicationSortCriteria = PublicationSortCriteria.Latest;
+  const [prevsortToShow, setprevSortToShow] = useState<PublicationSortCriteria>(
+    PublicationSortCriteria.Latest
+  );
+  //
+  // let prevsortToShow: PublicationSortCriteria = PublicationSortCriteria.Latest;
+  console.log("sort to show: ", sortToShow);
+  console.log("prevsortToShow: ", prevsortToShow);
+  console.log("dataToShow: ", dataToShow);
+  const [update, setUpdate] = useState<boolean>(false);
   async function updatUI() {
-    console.log("dataToshow: ", dataToShow);
-    if (data?.explorePublications.items && dataToShow == null) {
-      setDataToShow(data);
+    if (dataToShow == null || (dataToShow && userfilter != prevsortToShow)) {
+      console.log("in 0 ");
+
+      setSortToShow(userfilter);
+      console.log("in 1 ");
+      const exploreQuery = fetcher<
+        ExplorePublicationsQuery,
+        ExplorePublicationsQueryVariables
+      >(ExplorePublicationsDocument, {
+        request: {
+          sortCriteria: sortToShow,
+          publicationTypes: [PublicationTypes.Post],
+        },
+      });
+      const newData = await exploreQuery();
+      console.log("in 2 ");
+
+      setDataToShow(newData);
+      console.log("in 3 ");
+
+      setprevSortToShow(userfilter);
+      console.log("in 5 ");
+
       return;
+      // console.log("newData: ", newData);
     }
     if (dataToShow?.explorePublications.pageInfo.next) {
       setCanLoadMore(true);
@@ -62,8 +100,9 @@ export default function Home() {
         ExplorePublicationsQueryVariables
       >(ExplorePublicationsDocument, {
         request: {
-          sortCriteria: userfilter || PublicationSortCriteria.Latest,
+          sortCriteria: sortToShow,
           publicationTypes: [PublicationTypes.Post],
+          // noRandomize: true,
           cursor: dataToShow.explorePublications.pageInfo.next,
         },
       });
@@ -76,7 +115,7 @@ export default function Home() {
         newItems.map((newItem) => {
           dataArray.push(newItem);
         });
-        console.log("dataArray: ", dataArray);
+        // console.log("dataArray: ", dataArray);
 
         let newPageInfo = pubsNew.explorePublications.pageInfo;
         let newDataToshow: ExplorePublicationsQuery;
@@ -84,7 +123,7 @@ export default function Home() {
           __typename: "Query",
           explorePublications: { items: dataArray, pageInfo: newPageInfo },
         };
-        console.log("newDataToshow", newDataToshow);
+        // console.log("newDataToshow", newDataToshow);
         setDataToShow(newDataToshow);
       }
       setLoadMoreButtonLoading("Show More");
@@ -93,7 +132,7 @@ export default function Home() {
   }
   useEffect(() => {
     updatUI();
-  }, [loadMorePressed, dataToShow, data]);
+  }, [loadMorePressed, dataToShow, data, userfilter]);
   if (isLoading) {
     return (
       <div className={styles.container}>

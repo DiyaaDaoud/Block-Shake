@@ -41,7 +41,7 @@ export default function publicationCommentsPage() {
       enabled: !!publicationId,
     }
   );
-  console.log("publication:", data);
+  // console.log("publication:", data);
   publicationId = data?.publication?.id;
   let {
     isError: commentsError,
@@ -57,9 +57,7 @@ export default function publicationCommentsPage() {
       enabled: !!publicationId,
     }
   );
-  if (!commentsLoading && !commentsError)
-    console.log("comments are: ", comments);
-  async function updateUI() {
+  async function updatePublication() {
     if (!publicationId) return;
     const publicationQuery = fetcher<
       PublicationQuery,
@@ -68,6 +66,12 @@ export default function publicationCommentsPage() {
       request: { publicationId: publicationId },
     });
     data = await publicationQuery();
+    if (data.publication) {
+      setPublicationState(data);
+    }
+  }
+  async function updateComments() {
+    if (!publicationId) return;
     const commentsQuery = fetcher<
       PublicationsQuery,
       PublicationsQueryVariables
@@ -77,17 +81,16 @@ export default function publicationCommentsPage() {
       },
     });
     comments = await commentsQuery();
-    if (data.publication) {
-      setPublicationState(data);
-    }
     if (comments.publications) {
       setCommentsState(comments);
     }
   }
-
   useEffect(() => {
-    updateUI();
-  });
+    updatePublication();
+  }, [data, publicationState]);
+  useEffect(() => {
+    updateComments();
+  }, [comments, commentsState]);
   if (data?.publication?.id) {
     return (
       <div className={styles.container}>
@@ -115,15 +118,14 @@ export default function publicationCommentsPage() {
               </div>
               <div className={styles.formContainer}>
                 <textarea
-                  className={styles.contentContainer}
-                  placeholder="Content"
-                  onChange={(e) => setContent(e.target.value)}
-                ></textarea>
-
-                <textarea
                   className={styles.descriptionContainer}
                   placeholder="Decription"
                   onChange={(e) => setDescription(e.target.value)}
+                ></textarea>
+                <textarea
+                  className={styles.contentContainer}
+                  placeholder="Content"
+                  onChange={(e) => setContent(e.target.value)}
                 ></textarea>
 
                 <Web3Button
@@ -161,8 +163,10 @@ export default function publicationCommentsPage() {
               </div>
             </div>
           ) : (
-            <div className={styles.formContainer}>
-              Be the first to Comment 💭 on this publication
+            <div className={styles.commentsContainer}>
+              <div className={styles.hint}>
+                Be the first to Comment 💭 on this publication
+              </div>
             </div>
           ))}
       </div>

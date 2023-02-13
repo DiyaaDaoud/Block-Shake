@@ -4,7 +4,11 @@ import { ThirdwebSDK } from "@thirdweb-dev/sdk";
 import { EIP712Domain } from "@thirdweb-dev/sdk/dist/declarations/src/evm/common/sign";
 import { ethers } from "ethers";
 import omitDeep from "omit-deep";
-import { useHasTxHashBeenIndexedQuery } from "../graphql/generated";
+import {
+  DefaultProfileQuery,
+  NotificationsQuery,
+  useHasTxHashBeenIndexedQuery,
+} from "../graphql/generated";
 
 // 2. split the signed data to get {v,r,s}
 
@@ -29,63 +33,57 @@ export function splitSignature(signature: string) {
   return ethers.utils.splitSignature(signature);
 }
 
-export async function pollUntilIndexed(
-  input: { txHash: string } | { txId: string }
+export function storeProfileQuery(
+  PQ: DefaultProfileQuery,
+  address: string | undefined
 ) {
-  while (true) {
-    const {
-      data: txHashIndexedData,
-      isLoading: txHashIndexedLoading,
-      isError: txHahIndexedError,
-    } = useHasTxHashBeenIndexedQuery(
-      {
-        request: {
-          // @ts-ignore
-          txHash: input.txHash ? input.txHash : "",
-          // @ts-ignore
-          txId: input.txId ? input.txId : "",
-        },
-      },
-      {
-        //@ts-ignore
-        enabled: !!(input.txHash || input.txId),
-      }
-    );
-    if (
-      txHashIndexedData?.hasTxHashBeenIndexed.__typename ==
-      "TransactionIndexedResult"
-    ) {
-      console.log(
-        "pool until indexed: indexed",
-        txHashIndexedData.hasTxHashBeenIndexed.indexed
-      );
-      console.log(
-        "pool until metadataStatus: metadataStatus",
-        txHashIndexedData.hasTxHashBeenIndexed.metadataStatus
-      );
-      if (txHashIndexedData.hasTxHashBeenIndexed.metadataStatus) {
-        if (
-          txHashIndexedData.hasTxHashBeenIndexed.metadataStatus.status ==
-          "SUCCESS"
-        ) {
-          return txHashIndexedData.hasTxHashBeenIndexed;
-        }
-        if (
-          txHashIndexedData.hasTxHashBeenIndexed.metadataStatus?.status ==
-          "METADATA_VALIDATION_FAILED"
-        ) {
-          throw new Error(
-            txHashIndexedData.hasTxHashBeenIndexed.metadataStatus.status
-          );
-        }
-      } else {
-        if (txHashIndexedData.hasTxHashBeenIndexed.indexed) {
-          return txHashIndexedData.hasTxHashBeenIndexed;
-        }
-      }
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-    } else {
-      throw new Error(txHashIndexedData?.hasTxHashBeenIndexed.reason);
-    }
-  }
+  if (!address) return;
+  const ls = window.localStorage;
+  if (!ls) throw new Error("Local Storage id not found 😆");
+  ls.setItem(`DefaultProfileQuery_${address}`, JSON.stringify(PQ));
+}
+export function readProfileQuery(address: string | undefined) {
+  if (!address) return undefined;
+  const ls = window.localStorage;
+  if (!ls) throw new Error("Local Storage id not found 😆");
+  const data = ls.getItem(`DefaultProfileQuery_${address}`);
+  if (!data) return undefined;
+  // console.log("got the data from local storage!");
+  return JSON.parse(data) as DefaultProfileQuery;
+}
+export function storeNotifications(
+  notifications: NotificationsQuery,
+  address: string | undefined
+) {
+  if (!address) return;
+  const ls = window.localStorage;
+  if (!ls) throw new Error("Local Storage id not found 😆");
+  ls.setItem(`ProfilNotifications_${address}`, JSON.stringify(notifications));
+}
+export function readNotifications(address: string | undefined) {
+  if (!address) return undefined;
+  const ls = window.localStorage;
+  if (!ls) throw new Error("Local Storage id not found 😆");
+  const data = ls.getItem(`ProfilNotifications_${address}`);
+  if (!data) return undefined;
+  // console.log("got the data from local storage!");
+  return JSON.parse(data) as NotificationsQuery;
+}
+export function storeSeenNotifications(
+  num: number,
+  address: string | undefined
+) {
+  if (!address) return;
+  const ls = window.localStorage;
+  if (!ls) throw new Error("Local Storage id not found 😆");
+  ls.setItem(`SeenNotifications_${address}`, num.toString());
+}
+export function readSeenNotifications(address: string | undefined) {
+  if (!address) return undefined;
+  const ls = window.localStorage;
+  if (!ls) throw new Error("Local Storage id not found 😆");
+  const data = ls.getItem(`SeenNotifications_${address}`);
+  if (!data) return undefined;
+  // console.log("got the data from local storage!");
+  return parseInt(data);
 }

@@ -2,7 +2,6 @@ import { useMutation } from "@tanstack/react-query";
 import { useSDK, useStorageUpload } from "@thirdweb-dev/react";
 import { useCreateProfileMutation } from "../graphql/generated";
 import useLogin from "./auth/useLogin";
-import { pollUntilIndexed } from "./helpers";
 type CreateProfileArgs = {
   handle: string;
   image: File | null;

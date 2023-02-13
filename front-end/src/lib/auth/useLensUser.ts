@@ -8,7 +8,6 @@ import { useState } from "react";
 import { readAccessToken } from "./helpers";
 
 export default function useLensUser() {
-  const [currentUser, setCurrentUser] = useState<string>();
   const address = useAddress();
   const localStorageQuery = useQuery(["lens-user", address], () =>
     readAccessToken()
@@ -21,20 +20,8 @@ export default function useLensUser() {
     },
     { enabled: !!address } // only query profile if the user has connected his wallet
   );
-  // const {
-  //   data: addressProfiles,
-  //   isLoading: loadingProfiles,
-  //   isError: profilesError,
-  // } = useProfilesQuery({
-  //   request: {
-  //     ownedBy: [address],
-  //   },
-  // });
-  // console.log("addressProfiles: ", addressProfiles);
-  // console.log("profileQuery: ", profileQuery.data);
   return {
     isSignedInQuery: localStorageQuery,
     profileQuery: profileQuery,
-    // addressProfiles: addressProfiles,
   };
 }

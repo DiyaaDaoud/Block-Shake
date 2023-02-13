@@ -24,7 +24,7 @@ import useLensUser from "@/src/lib/auth/useLensUser";
 import { useEffect, useState } from "react";
 import { fetcher } from "@/src/graphql/auth-fetcher";
 type Props = {};
-
+import { Avatar } from "@mui/material";
 export default function profilePage({}: Props) {
   const router = useRouter();
   const { id } = router.query;
@@ -34,9 +34,10 @@ export default function profilePage({}: Props) {
   const [profileDataState, setProfileDataState] = useState<ProfileQuery>();
   const [publicationsDataState, setPublicationsDataState] =
     useState<PublicationsQuery>();
-  const [userName, setUserName] = useState<string>();
-  const [userbio, setUserBio] = useState<string>();
+  const [userName, setUserName] = useState<string | null>();
+  const [userbio, setUserBio] = useState<string | null>();
   const [usercoverImage, setUserCoverImage] = useState<string>();
+  const [imageIsAvatar, setImageIsAvatar] = useState<boolean>(false);
   let {
     isLoading: loadingProfile,
     data: profileData,
@@ -51,9 +52,7 @@ export default function profilePage({}: Props) {
       enabled: !!id,
     }
   );
-  if (profileError) {
-    return <div>Error loading profile</div>;
-  }
+
   let {
     isLoading: loadingPublications,
     data: publicationsData,
@@ -68,17 +67,22 @@ export default function profilePage({}: Props) {
       enabled: !!profileData?.profile?.id,
     }
   );
-
-  if (publicationsError) {
-    return <div>Error loading publications</div>;
-  }
+  // if (profileError) {
+  //   return <div>Error loading profile</div>;
+  // }
+  // if (loadingProfile) {
+  //   return <div>loading profile</div>;
+  // }
+  // if (publicationsError) {
+  //   return <div>Error loading publications</div>;
+  // }
   async function fetchMetadata() {
-    if (!profileQuery.data?.defaultProfile?.metadata) return;
-    if (profileQuery.data?.defaultProfile?.metadata.slice(0, 4) != "ipfs")
-      return;
+    if (!profileData?.profile?.metadata) return;
+    let metadataPath = profileData?.profile?.metadata;
+    if (metadataPath.slice(0, 4) == "ipfs") {
+      metadataPath = metadataPath.replace("ipfs://", "https://ipfs.io/ipfs/");
+    }
 
-    let metadataPath = profileQuery.data?.defaultProfile?.metadata;
-    metadataPath = metadataPath.replace("ipfs://", "https://ipfs.io/ipfs/");
     const jsonObj = await (await fetch(metadataPath)).json();
     const name = jsonObj.name;
     const cover_picture = jsonObj.cover_picture;
@@ -86,36 +90,54 @@ export default function profilePage({}: Props) {
     if (name) setUserName(name);
     if (cover_picture) setUserCoverImage(cover_picture);
     if (bio) setUserBio(bio);
+    // console.log("name: ", name, " bio: ", bio, " cover pic: ", cover_picture);
   }
+
   async function updatUI() {
     if (!id) return;
+    // console.log("in 0");
     const profile = fetcher<ProfileQuery, ProfileQueryVariables>(
       ProfileDocument,
       {
         request: { handle: id },
       }
     );
+    // console.log("in 1");
     profileData = await profile();
+    // console.log("in 2");
     const publications = fetcher<PublicationsQuery, PublicationsQueryVariables>(
       PublicationsDocument,
       {
         request: { profileId: profileData.profile?.id },
       }
     );
+    // console.log("in 3");
     publicationsData = await publications();
+    // console.log("in 4");
     if (profileData.profile) {
       setProfileDataState(profileData);
+      // @ts-ignore
+      if (profileData.profile.picture?.original?.url) {
+        if (
+          // @ts-ignore
+          profileData.profile.picture.original.url.slice(0, 18) ==
+          "https://ui-avatars"
+        ) {
+          setImageIsAvatar(true);
+        }
+      }
     }
     if (publicationsData.publications) {
       setPublicationsDataState(publicationsData);
     }
     await fetchMetadata();
+    // @ts-ignore
   }
 
   useEffect(() => {
     updatUI();
   });
-  console.log("profileData: ", profileData);
+  // console.log("profileData: ", profileData);
   if (profileData?.profile) {
     return (
       <div className={styles.profileContainer}>
@@ -154,19 +176,29 @@ export default function profilePage({}: Props) {
           {/* @ts-ignore */}
           {profileDataState?.profile?.picture ? (
             <div className={styles.profilePicWithButon}>
-              <MediaRenderer
+              {imageIsAvatar ? (
                 // @ts-ignore
-                src={
+                <Avatar
                   // @ts-ignore
-                  profileDataState.profile.picture.original
-                    ? // @ts-ignore
-                      profileDataState.profile.picture.original.url
-                    : // @ts-ignore
-                      profileDataState.profile.picture.uri
-                }
-                alt={"profile pic"}
-                className={styles.profilePictureContainer}
-              ></MediaRenderer>
+                  src={profileData?.profile?.picture?.original?.url}
+                  className={styles.profilePictureContainer}
+                  alt={"profile pic"}
+                ></Avatar>
+              ) : (
+                <MediaRenderer
+                  // @ts-ignore
+                  src={
+                    // @ts-ignore
+                    profileDataState.profile.picture.original
+                      ? // @ts-ignore
+                        profileDataState.profile.picture.original.url
+                      : // @ts-ignore
+                        profileDataState.profile.picture.uri
+                  }
+                  alt={"profile pic"}
+                  className={styles.profilePictureContainer}
+                ></MediaRenderer>
+              )}
 
               {profileQuery.data?.defaultProfile?.id ===
                 profileDataState.profile.id && (
@@ -301,6 +333,9 @@ export default function profilePage({}: Props) {
       <div className={styles.profileContainer}>
         <div className={styles.profileContentContainer}>
           <h3 className={styles.profileName}>Loading profile...</h3>
+          <h3 className={styles.profileName}>
+            if it took much time, please try to refresh the page
+          </h3>
         </div>
       </div>
     );
