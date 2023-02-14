@@ -158,6 +158,13 @@ export default function publicationMerrorsPage() {
                   );
                 })}
               </div>
+            ) : publicationDataState &&
+              publicationDataState.publication &&
+              publicationDataState?.publication?.stats.totalAmountOfMirrors >
+                0 ? (
+              <div className={styles.hint}>
+                Could not load all the previous mirrors
+              </div>
             ) : (
               <div className={styles.hint}>No mirrors 🪞 for this Post yet</div>
             )
