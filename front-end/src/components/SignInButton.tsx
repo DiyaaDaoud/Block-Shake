@@ -152,7 +152,7 @@ export default function SignInButton({}: Props) {
   }
   useEffect(() => {
     updateCustomProfile();
-  }, [customProfileQuery, currentUser, address]);
+  }, [customProfileQuery, currentUser, address, profileQuery]);
   useEffect(() => {
     updateNotifs();
   }, [profileNotifications, notifs, notifsNum]);
