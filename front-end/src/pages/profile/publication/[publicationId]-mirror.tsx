@@ -19,11 +19,12 @@ import {
 } from "@/src/graphql/generated";
 import useLensUser from "@/src/lib/auth/useLensUser";
 import useCreateMirror from "@/src/lib/useCreateMirror";
-import { Web3Button } from "@thirdweb-dev/react";
+import { useAddress, Web3Button } from "@thirdweb-dev/react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import styles from "../../../styles/CreateMirror.module.css";
 export default function publicationMerrorsPage() {
+  const address = useAddress();
   const router = useRouter();
   let { publicationId } = router.query;
   const { mutateAsync: createMirror } = useCreateMirror();
@@ -120,45 +121,6 @@ export default function publicationMerrorsPage() {
   useEffect(() => {
     updateMirrors();
   }, [publicationMirrors, publicationMirrorsState]);
-  // async function updateUI() {
-  //   if (!publicationId) return;
-  //   const publicationQuery = fetcher<
-  //     PublicationQuery,
-  //     PublicationQueryVariables
-  //   >(PublicationDocument, {
-  //     request: { publicationId: publicationId },
-  //   });
-  //   publicationData = await publicationQuery();
-  //   // console.log("inside updateUI:, publicationData", publicationData);
-
-  //   const mirrorsQuery = fetcher<
-  //     ExplorePublicationsQuery,
-  //     ExplorePublicationsQueryVariables
-  //   >(ExplorePublicationsDocument, {
-  //     request: {
-  //       publicationTypes: [PublicationTypes.Mirror],
-  //       sortCriteria: PublicationSortCriteria.Latest,
-  //     },
-  //   });
-  //   mirrorsData = await mirrorsQuery();
-  //   // console.log("inside updateUI:, mirrorsData", mirrorsData);
-  //   publicationMirrors = mirrorsData?.explorePublications.items.filter(
-  //     (mirror) => {
-  //       // @ts-ignore
-  //       return mirror.mirrorOf?.id == publicationId;
-  //     }
-  //   );
-  //   // console.log("inside updateUI:, publicationMirrors", publicationMirrors);
-  //   if (publicationData.publication) {
-  //     setPublicationDataState(publicationData);
-  //   }
-  //   if (mirrorsData.explorePublications && publicationMirrors) {
-  //     setPublicationMirrorsState(publicationMirrors);
-  //   }
-  // }
-  // useEffect(() => {
-  //   updateUI();
-  // });
 
   if (publicationData?.publication) {
     return (
@@ -167,7 +129,7 @@ export default function publicationMerrorsPage() {
           <div className={styles.publicationContainer}>
             <FeedPost publication={publicationData.publication}></FeedPost>
           </div>
-          {isSignedInQuery.data && (
+          {address && isSignedInQuery.data && (
             <div className={styles.formContainer}>
               <Web3Button
                 className={styles.createButton}

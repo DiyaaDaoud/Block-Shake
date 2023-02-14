@@ -16,11 +16,12 @@ import {
 } from "@/src/graphql/generated";
 import useLensUser from "@/src/lib/auth/useLensUser";
 import useCreateComment from "@/src/lib/useCreateComment";
-import { Web3Button } from "@thirdweb-dev/react";
+import { useAddress, Web3Button } from "@thirdweb-dev/react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import styles from "../../../styles/CreateComment.module.css";
 export default function publicationCommentsPage() {
+  const address = useAddress();
   const router = useRouter();
   let { publicationId } = router.query;
   const [image, setImage] = useState<File | null>(null);
@@ -41,7 +42,7 @@ export default function publicationCommentsPage() {
       enabled: !!publicationId,
     }
   );
-  // console.log("publication:", data);
+  console.log("publication:", data);
   publicationId = data?.publication?.id;
   let {
     isError: commentsError,
@@ -98,7 +99,7 @@ export default function publicationCommentsPage() {
           <div className={styles.publicationContainer}>
             <FeedPost publication={data.publication}></FeedPost>
           </div>
-          {isSignedInQuery.data && (
+          {address && isSignedInQuery.data && (
             <div className={styles.addCommentContainer}>
               <h3 className={styles.hint}>Add your comment ⤵️</h3>
               <div className={styles.formContainer}>

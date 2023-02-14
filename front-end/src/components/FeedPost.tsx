@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { MediaRenderer, Web3Button } from "@thirdweb-dev/react";
+import { MediaRenderer, useAddress, Web3Button } from "@thirdweb-dev/react";
 import { Html } from "next/document";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -41,74 +41,15 @@ type Props = {
 };
 
 export default function FeedPost({ publication }: Props) {
-  // @ts-ignore
-  // console.log("publication", publication);
+  const address = useAddress();
   const { isSignedInQuery, profileQuery } = useLensUser();
   const { mutateAsync: addReaction } = useAddReaction();
   const { mutateAsync: removeReaction } = useRemoveReaction();
-  let {
-    data: whoReactedData,
-    isLoading: whoReactedLoading,
-    isError: whoReactedError,
-  } = useWhoReactedPublicationQuery({
-    request: {
-      publicationId: publication.id,
-    },
-  });
-  let {
-    isError: commentsError,
-    isLoading: commentsLoading,
-    data: comments,
-  } = usePublicationsQuery(
-    {
-      request: {
-        commentsOf: publication.id,
-      },
-    },
-    {
-      enabled: !!publication.id,
-    }
-  );
-  let {
-    data: whoCollectedData,
-    isLoading: loadingWhoCollected,
-    isError: whoCollectedError,
-  } = useWhoCollectedPublicationQuery({
-    request: {
-      publicationId: publication.id,
-    },
-  });
-  let {
-    data: mirrorsPublicationsData,
-    isLoading: mirrorsLoading,
-    isError: mirrorsError,
-  } = useExplorePublicationsQuery(
-    {
-      request: {
-        publicationTypes: [PublicationTypes.Mirror],
-        sortCriteria: PublicationSortCriteria.Latest,
-      },
-    },
-    {
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
-    }
-  );
-  let publicationMirrors: ExplorePublicationsQuery["explorePublications"]["items"];
-  if (mirrorsPublicationsData?.explorePublications.items) {
-    publicationMirrors =
-      mirrorsPublicationsData?.explorePublications.items.filter((mirror) => {
-        // @ts-ignore
-        return mirror.mirrorOf?.id == publication.id;
-      });
-  }
-
   const [whoReactedDataState, setWhoReactedDataState] =
     useState<WhoReactedPublicationQuery>();
   const [commentsCount, setCommentsCount] = useState<number>(0);
   const [collectsCount, setCollectsCount] = useState<number>(0);
   const [mirrorsCount, setMirrorsCount] = useState<number>(0);
-
   const [hasReacted, setHasReacted] = useState<boolean>(false);
   const [userReaction, setUserReaction] = useState<ReactionTypes>();
   const [likeSource, setLikeSource] = useState<string>("/empty-like.png");
@@ -118,6 +59,15 @@ export default function FeedPost({ publication }: Props) {
   const [downVotesCount, setDownVotesCount] = useState<number>(0);
   const [timePosted, setTimePosted] = useState<string>();
   const [datePosted, setDatePosted] = useState<string>();
+  let {
+    data: whoReactedData,
+    isLoading: whoReactedLoading,
+    isError: whoReactedError,
+  } = useWhoReactedPublicationQuery({
+    request: {
+      publicationId: publication.id,
+    },
+  });
 
   async function updateReactions() {
     const reactionQuery = fetcher<
@@ -174,66 +124,84 @@ export default function FeedPost({ publication }: Props) {
     }
   }
   async function updateComments() {
-    const commentsQuery = fetcher<
-      PublicationsQuery,
-      PublicationsQueryVariables
-    >(PublicationsDocument, {
-      request: { commentsOf: publication.id },
-    });
-    comments = await commentsQuery();
-    if (comments.publications.items) {
-      const commentsCountState =
-        comments.publications.pageInfo.totalCount ||
-        comments.publications.items.length;
-      setCommentsCount(commentsCountState);
+    if (
+      publication.stats.totalAmountOfComments &&
+      commentsCount !== publication.stats.totalAmountOfComments
+    ) {
+      setCommentsCount(publication.stats.totalAmountOfComments);
     }
+    // const commentsQuery = fetcher<
+    //   PublicationsQuery,
+    //   PublicationsQueryVariables
+    // >(PublicationsDocument, {
+    //   request: { commentsOf: publication.id },
+    // });
+    // comments = await commentsQuery();
+    // if (comments.publications.items) {
+    //   const commentsCountState =
+    //     comments.publications.pageInfo.totalCount ||
+    //     comments.publications.items.length;
+    //   setCommentsCount(commentsCountState);
+    // }
   }
   async function updateCollects() {
-    const collectsQuery = fetcher<
-      WhoCollectedPublicationQuery,
-      WhoCollectedPublicationQueryVariables
-    >(WhoCollectedPublicationDocument, {
-      request: { publicationId: publication.id },
-    });
-    whoCollectedData = await collectsQuery();
-    if (whoCollectedData.whoCollectedPublication.items) {
-      const collectsCountState =
-        whoCollectedData.whoCollectedPublication.pageInfo.totalCount ||
-        whoCollectedData.whoCollectedPublication.items.length;
-      setCollectsCount(collectsCountState);
+    if (
+      publication.stats.totalAmountOfCollects &&
+      collectsCount !== publication.stats.totalAmountOfCollects
+    ) {
+      setCollectsCount(publication.stats.totalAmountOfCollects);
     }
+    // const collectsQuery = fetcher<
+    //   WhoCollectedPublicationQuery,
+    //   WhoCollectedPublicationQueryVariables
+    // >(WhoCollectedPublicationDocument, {
+    //   request: { publicationId: publication.id },
+    // });
+    // whoCollectedData = await collectsQuery();
+    // if (whoCollectedData.whoCollectedPublication.items) {
+    //   const collectsCountState =
+    //     whoCollectedData.whoCollectedPublication.pageInfo.totalCount ||
+    //     whoCollectedData.whoCollectedPublication.items.length;
+    //   setCollectsCount(collectsCountState);
+    // }
   }
   async function updateMirrors() {
-    const mirrorsQuery = fetcher<
-      ExplorePublicationsQuery,
-      ExplorePublicationsQueryVariables
-    >(ExplorePublicationsDocument, {
-      request: {
-        publicationTypes: [PublicationTypes.Mirror],
-        sortCriteria: PublicationSortCriteria.Latest,
-      },
-    });
-    mirrorsPublicationsData = await mirrorsQuery();
-    let customPublicationMirrors;
-    if (mirrorsPublicationsData.explorePublications.items) {
-      customPublicationMirrors =
-        mirrorsPublicationsData?.explorePublications.items.filter((mirror) => {
-          // @ts-ignore
-          return mirror.mirrorOf?.id == publication.id;
-        });
+    if (
+      publication.stats.totalAmountOfMirrors &&
+      mirrorsCount !== publication.stats.totalAmountOfMirrors
+    ) {
+      setMirrorsCount(publication.stats.totalAmountOfMirrors);
     }
-    if (customPublicationMirrors) {
-      if (publicationMirrors) {
-        if (customPublicationMirrors.length > publicationMirrors.length)
-          setMirrorsCount(customPublicationMirrors.length);
-        else {
-          setMirrorsCount(publicationMirrors.length);
-        }
-      } else {
-        publicationMirrors = customPublicationMirrors;
-        setMirrorsCount(customPublicationMirrors.length);
-      }
-    }
+    // const mirrorsQuery = fetcher<
+    //   ExplorePublicationsQuery,
+    //   ExplorePublicationsQueryVariables
+    // >(ExplorePublicationsDocument, {
+    //   request: {
+    //     publicationTypes: [PublicationTypes.Mirror],
+    //     sortCriteria: PublicationSortCriteria.Latest,
+    //   },
+    // });
+    // mirrorsPublicationsData = await mirrorsQuery();
+    // let customPublicationMirrors;
+    // if (mirrorsPublicationsData.explorePublications.items) {
+    //   customPublicationMirrors =
+    //     mirrorsPublicationsData?.explorePublications.items.filter((mirror) => {
+    //       // @ts-ignore
+    //       return mirror.mirrorOf?.id == publication.id;
+    //     });
+    // }
+    // if (customPublicationMirrors) {
+    //   if (publicationMirrors) {
+    //     if (customPublicationMirrors.length > publicationMirrors.length)
+    //       setMirrorsCount(customPublicationMirrors.length);
+    //     else {
+    //       setMirrorsCount(publicationMirrors.length);
+    //     }
+    //   } else {
+    //     publicationMirrors = customPublicationMirrors;
+    //     setMirrorsCount(customPublicationMirrors.length);
+    //   }
+    // }
   }
 
   async function updateCreationTime() {
@@ -261,13 +229,13 @@ export default function FeedPost({ publication }: Props) {
   ]);
   useEffect(() => {
     updateComments();
-  }, [comments, commentsCount]);
+  }, [publication, commentsCount]);
   useEffect(() => {
     updateCollects();
-  }, [whoCollectedData, collectsCount]);
+  }, [publication, collectsCount]);
   useEffect(() => {
     updateMirrors();
-  }, [mirrorsPublicationsData, mirrorsCount]);
+  }, [publication, mirrorsCount]);
   useEffect(() => {
     updateCreationTime();
   }, [datePosted, timePosted]);
@@ -351,148 +319,135 @@ export default function FeedPost({ publication }: Props) {
           ></MediaRenderer>
         )}
       </div>
-      {(loadingWhoCollected ||
-        commentsLoading ||
-        whoReactedLoading ||
-        mirrorsLoading) && (
+      {/* {(!upVotesCount ||
+        !downVotesCount ||
+        !commentsCount ||
+        !collectsCount ||
+        !mirrorsCount) && (
         <div className={styles.feedPostFooter}> Loading stats ..</div>
-      )}
-      {(commentsError ||
+      )} */}
+      {/* {(commentsError ||
         whoCollectedError ||
         whoReactedError ||
         mirrorsError) && (
         <div className={styles.feedPostFooter}> ERROR Loading stats ..</div>
-      )}
-      {whoCollectedData &&
-        comments &&
-        whoReactedData &&
-        mirrorsPublicationsData && (
-          <div className={styles.feedPostFooter}>
-            <div className={styles.reactionDiv}>
-              <p style={{ cursor: "pointer" }}>{upVotesCount}</p>
-              <img
-                src={likeSource}
-                className={styles.reaction}
-                style={{ cursor: "pointer" }}
-                onClick={async () => {
-                  if (profileQuery.data) {
-                    //setClicked(!clicked);
-                    if (hasReacted) {
-                      if (userReaction == ReactionTypes.Upvote) {
-                        await removeReaction({
-                          profileId: profileQuery.data?.defaultProfile?.id,
-                          publicationId: publication.id,
-                          reaction: ReactionTypes.Upvote,
-                        });
-                        setUpVotesCount(upVotesCount - 1);
-                      } else {
-                        await removeReaction({
-                          profileId: profileQuery.data?.defaultProfile?.id,
-                          publicationId: publication.id,
-                          reaction: ReactionTypes.Downvote,
-                        });
-                        await addReaction({
-                          profileId: profileQuery.data?.defaultProfile?.id,
-                          publicationId: publication.id,
-                          reaction: ReactionTypes.Upvote,
-                        });
-                        setUpVotesCount(upVotesCount + 1);
-                        setDownVotesCount(downVotesCount - 1);
-                      }
-                    } else {
-                      await addReaction({
-                        profileId: profileQuery.data?.defaultProfile?.id,
-                        publicationId: publication.id,
-                        reaction: ReactionTypes.Upvote,
-                      });
-                      setUpVotesCount(upVotesCount + 1);
-                    }
-                  }
-                }}
-              ></img>
-            </div>
-            <div className={styles.reactionDiv}>
-              <p
-                style={{ cursor: "pointer", maxWidth: "15%" }}
-                onClick={() => {
-                  if (!whoReactedData?.whoReactedPublication) {
-                    // console.log("didn't get reactions");
-                    return;
-                  }
-                }}
-              >
-                {downVotesCount}
-              </p>
-              <img
-                src={dislikeSource}
-                className={styles.reaction}
-                style={{ cursor: "pointer" }}
-                onClick={async () => {
-                  if (profileQuery.data) {
-                    if (hasReacted) {
-                      if (userReaction == ReactionTypes.Upvote) {
-                        await removeReaction({
-                          profileId: profileQuery.data?.defaultProfile?.id,
-                          publicationId: publication.id,
-                          reaction: ReactionTypes.Upvote,
-                        });
-                        await addReaction({
-                          profileId: profileQuery.data?.defaultProfile?.id,
-                          publicationId: publication.id,
-                          reaction: ReactionTypes.Downvote,
-                        });
-                        setUpVotesCount(upVotesCount - 1);
-                        setDownVotesCount(downVotesCount + 1);
-                      } else {
-                        await removeReaction({
-                          profileId: profileQuery.data?.defaultProfile?.id,
-                          publicationId: publication.id,
-                          reaction: ReactionTypes.Downvote,
-                        });
-                        setDownVotesCount(downVotesCount - 1);
-                      }
-                    } else {
-                      await addReaction({
-                        profileId: profileQuery.data?.defaultProfile?.id,
-                        publicationId: publication.id,
-                        reaction: ReactionTypes.Downvote,
-                      });
-                      setDownVotesCount(downVotesCount + 1);
-                    }
-                  }
-                }}
-              ></img>
-            </div>
-            <Link
-              style={{ position: "relative" }}
-              href={{
-                pathname: `/profile/publication/[publicationId]-collect`,
-                query: { publicationId: `${publication.id}` },
-              }}
-            >
-              {collectsCount} 👜
-            </Link>
+      )} */}
 
-            <Link
-              style={{ position: "relative" }}
-              href={{
-                pathname: `/profile/publication/[publicationId]-mirror`,
-                query: { publicationId: `${publication.id}` },
-              }}
-            >
-              {mirrorsCount} 🪞
-            </Link>
-            <Link
-              style={{ position: "relative" }}
-              href={{
-                pathname: `/profile/publication/[publicationId]-comment`,
-                query: { publicationId: `${publication.id}` },
-              }}
-            >
-              {commentsCount} 💭
-            </Link>
-          </div>
-        )}
+      <div className={styles.feedPostFooter}>
+        <div className={styles.reactionDiv}>
+          <p style={{ cursor: "pointer" }}>{upVotesCount}</p>
+          <img
+            src={likeSource}
+            className={styles.reaction}
+            style={{ cursor: "pointer" }}
+            onClick={async () => {
+              if (profileQuery.data && isSignedInQuery.data && address) {
+                //setClicked(!clicked);
+                if (hasReacted) {
+                  if (userReaction == ReactionTypes.Upvote) {
+                    await removeReaction({
+                      profileId: profileQuery.data?.defaultProfile?.id,
+                      publicationId: publication.id,
+                      reaction: ReactionTypes.Upvote,
+                    });
+                    setUpVotesCount(upVotesCount - 1);
+                  } else {
+                    await removeReaction({
+                      profileId: profileQuery.data?.defaultProfile?.id,
+                      publicationId: publication.id,
+                      reaction: ReactionTypes.Downvote,
+                    });
+                    await addReaction({
+                      profileId: profileQuery.data?.defaultProfile?.id,
+                      publicationId: publication.id,
+                      reaction: ReactionTypes.Upvote,
+                    });
+                    setUpVotesCount(upVotesCount + 1);
+                    setDownVotesCount(downVotesCount - 1);
+                  }
+                } else {
+                  await addReaction({
+                    profileId: profileQuery.data?.defaultProfile?.id,
+                    publicationId: publication.id,
+                    reaction: ReactionTypes.Upvote,
+                  });
+                  setUpVotesCount(upVotesCount + 1);
+                }
+              }
+            }}
+          ></img>
+        </div>
+        <div className={styles.reactionDiv}>
+          <p style={{ cursor: "pointer", maxWidth: "15%" }}>{downVotesCount}</p>
+          <img
+            src={dislikeSource}
+            className={styles.reaction}
+            style={{ cursor: "pointer" }}
+            onClick={async () => {
+              if (profileQuery.data && isSignedInQuery.data && address) {
+                if (hasReacted) {
+                  if (userReaction == ReactionTypes.Upvote) {
+                    await removeReaction({
+                      profileId: profileQuery.data?.defaultProfile?.id,
+                      publicationId: publication.id,
+                      reaction: ReactionTypes.Upvote,
+                    });
+                    await addReaction({
+                      profileId: profileQuery.data?.defaultProfile?.id,
+                      publicationId: publication.id,
+                      reaction: ReactionTypes.Downvote,
+                    });
+                    setUpVotesCount(upVotesCount - 1);
+                    setDownVotesCount(downVotesCount + 1);
+                  } else {
+                    await removeReaction({
+                      profileId: profileQuery.data?.defaultProfile?.id,
+                      publicationId: publication.id,
+                      reaction: ReactionTypes.Downvote,
+                    });
+                    setDownVotesCount(downVotesCount - 1);
+                  }
+                } else {
+                  await addReaction({
+                    profileId: profileQuery.data?.defaultProfile?.id,
+                    publicationId: publication.id,
+                    reaction: ReactionTypes.Downvote,
+                  });
+                  setDownVotesCount(downVotesCount + 1);
+                }
+              }
+            }}
+          ></img>
+        </div>
+        <Link
+          style={{ position: "relative" }}
+          href={{
+            pathname: `/profile/publication/[publicationId]-collect`,
+            query: { publicationId: `${publication.id}` },
+          }}
+        >
+          {collectsCount} 👜
+        </Link>
+
+        <Link
+          style={{ position: "relative" }}
+          href={{
+            pathname: `/profile/publication/[publicationId]-mirror`,
+            query: { publicationId: `${publication.id}` },
+          }}
+        >
+          {mirrorsCount} 🪞
+        </Link>
+        <Link
+          style={{ position: "relative" }}
+          href={{
+            pathname: `/profile/publication/[publicationId]-comment`,
+            query: { publicationId: `${publication.id}` },
+          }}
+        >
+          {commentsCount} 💭
+        </Link>
+      </div>
     </div>
   );
 }

@@ -15,13 +15,15 @@ import {
   WhoCollectedPublicationQuery,
   WhoCollectedPublicationQueryVariables,
 } from "@/src/graphql/generated";
+import { readAccessToken } from "@/src/lib/auth/helpers";
 import useCollect from "@/src/lib/useCollect";
-import { Web3Button } from "@thirdweb-dev/react";
+import { useAddress, Web3Button } from "@thirdweb-dev/react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import styles from "../../../styles/Collect.module.css";
 export default function publicationCollectPage() {
+  const address = useAddress();
   const [recipient, setRecipient] = useState<string>("");
   const [publicationDataState, setPublicationDataState] =
     useState<PublicationQuery>();
@@ -30,6 +32,7 @@ export default function publicationCollectPage() {
   const router = useRouter();
   const { publicationId } = router.query;
   const { mutateAsync: collect } = useCollect();
+  let accessToken = readAccessToken();
   let {
     isError: publicationError,
     isLoading: loadingPublication,
@@ -181,17 +184,21 @@ export default function publicationCollectPage() {
                     followers only
                   </h2>
                   <h2 className={styles.hint}>You may collect it</h2>
-                  <Web3Button
-                    className={styles.createButton}
-                    contractAddress={LENS_CONTRACT_ADDRESS}
-                    contractAbi={LENS_CONTRACT_ABI}
-                    action={async () => {
-                      if (!publicationDataState.publication) return;
-                      return await collect(publicationDataState.publication.id);
-                    }}
-                  >
-                    Collect Now
-                  </Web3Button>
+                  {accessToken && (
+                    <Web3Button
+                      className={styles.createButton}
+                      contractAddress={LENS_CONTRACT_ADDRESS}
+                      contractAbi={LENS_CONTRACT_ABI}
+                      action={async () => {
+                        if (!publicationDataState.publication) return;
+                        return await collect(
+                          publicationDataState.publication.id
+                        );
+                      }}
+                    >
+                      Collect Now
+                    </Web3Button>
+                  )}
                 </div>
                 {collectorsState.whoCollectedPublication.items.length > 0 ? (
                   <div className={styles.collectsAndHintContainer}>
@@ -283,17 +290,19 @@ export default function publicationCollectPage() {
                   This publication can be collected for free by anyone
                 </h2>
                 <h2 className={styles.hint}>You may collect it 💟</h2>
-                <Web3Button
-                  className={styles.createButton}
-                  contractAddress={LENS_CONTRACT_ADDRESS}
-                  contractAbi={LENS_CONTRACT_ABI}
-                  action={async () => {
-                    if (!publicationDataState.publication) return;
-                    return await collect(publicationDataState.publication.id);
-                  }}
-                >
-                  Collect Now
-                </Web3Button>
+                {address && accessToken && (
+                  <Web3Button
+                    className={styles.createButton}
+                    contractAddress={LENS_CONTRACT_ADDRESS}
+                    contractAbi={LENS_CONTRACT_ABI}
+                    action={async () => {
+                      if (!publicationDataState.publication) return;
+                      return await collect(publicationDataState.publication.id);
+                    }}
+                  >
+                    Collect Now
+                  </Web3Button>
+                )}
               </div>
               {collectorsState.whoCollectedPublication.items.length > 0 ? (
                 <div className={styles.collectsAndHintContainer}>
@@ -356,17 +365,21 @@ export default function publicationCollectPage() {
                     </Link>
                   </h2>
                   <h2 className={styles.hint}>You may collect it</h2>
-                  <Web3Button
-                    className={styles.createButton}
-                    contractAddress={LENS_CONTRACT_ADDRESS}
-                    contractAbi={LENS_CONTRACT_ABI}
-                    action={async () => {
-                      if (!publicationDataState.publication) return;
-                      return await collect(publicationDataState.publication.id);
-                    }}
-                  >
-                    Collect Now
-                  </Web3Button>
+                  {address && accessToken && (
+                    <Web3Button
+                      className={styles.createButton}
+                      contractAddress={LENS_CONTRACT_ADDRESS}
+                      contractAbi={LENS_CONTRACT_ABI}
+                      action={async () => {
+                        if (!publicationDataState.publication) return;
+                        return await collect(
+                          publicationDataState.publication.id
+                        );
+                      }}
+                    >
+                      Collect Now
+                    </Web3Button>
+                  )}
                 </div>
                 {collectorsState.whoCollectedPublication.items.length > 0 ? (
                   <div className={styles.collectsAndHintContainer}>
@@ -475,17 +488,19 @@ export default function publicationCollectPage() {
                   }
                 </h2>
                 <h2 className={styles.hint}>You may collect it 💟</h2>
-                <Web3Button
-                  className={styles.createButton}
-                  contractAddress={LENS_CONTRACT_ADDRESS}
-                  contractAbi={LENS_CONTRACT_ABI}
-                  action={async () => {
-                    if (!publicationDataState.publication) return;
-                    return await collect(publicationDataState.publication.id);
-                  }}
-                >
-                  Collect Now
-                </Web3Button>
+                {address && accessToken && (
+                  <Web3Button
+                    className={styles.createButton}
+                    contractAddress={LENS_CONTRACT_ADDRESS}
+                    contractAbi={LENS_CONTRACT_ABI}
+                    action={async () => {
+                      if (!publicationDataState.publication) return;
+                      return await collect(publicationDataState.publication.id);
+                    }}
+                  >
+                    Collect Now
+                  </Web3Button>
+                )}
               </div>
               {collectorsState.whoCollectedPublication.items.length > 0 ? (
                 <div className={styles.collectsAndHintContainer}>

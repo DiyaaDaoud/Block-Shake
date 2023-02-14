@@ -7,8 +7,9 @@ import {
   PublicationsQueryVariables,
   useProfileQuery,
   usePublicationsQuery,
+  PublicationTypes,
 } from "@/src/graphql/generated";
-import { MediaRenderer, Web3Button } from "@thirdweb-dev/react";
+import { MediaRenderer, useAddress, Web3Button } from "@thirdweb-dev/react";
 import { useRouter } from "next/router";
 import styles from "../../styles/Profile.module.css";
 import FeedPost from "@/src/components/FeedPost";
@@ -25,9 +26,11 @@ import { useEffect, useState } from "react";
 import { fetcher } from "@/src/graphql/auth-fetcher";
 type Props = {};
 import { Avatar } from "@mui/material";
+import { readProfileQuery } from "@/src/lib/helpers";
 export default function profilePage({}: Props) {
   const router = useRouter();
   const { id } = router.query;
+  const address = useAddress();
   const { mutateAsync: followUser } = useFollow();
   const { mutateAsync: unfollowUser } = useUnFollow();
   const { isSignedInQuery, profileQuery } = useLensUser();
@@ -38,6 +41,7 @@ export default function profilePage({}: Props) {
   const [userbio, setUserBio] = useState<string | null>();
   const [usercoverImage, setUserCoverImage] = useState<string>();
   const [imageIsAvatar, setImageIsAvatar] = useState<boolean>(false);
+  let customProfile = readProfileQuery(address);
   let {
     isLoading: loadingProfile,
     data: profileData,
@@ -52,7 +56,7 @@ export default function profilePage({}: Props) {
       enabled: !!id,
     }
   );
-
+  console.log("profileDataState", profileDataState);
   let {
     isLoading: loadingPublications,
     data: publicationsData,
@@ -61,21 +65,13 @@ export default function profilePage({}: Props) {
     {
       request: {
         profileId: profileData?.profile?.id,
+        publicationTypes: [PublicationTypes.Post],
       },
     },
     {
       enabled: !!profileData?.profile?.id,
     }
   );
-  // if (profileError) {
-  //   return <div>Error loading profile</div>;
-  // }
-  // if (loadingProfile) {
-  //   return <div>loading profile</div>;
-  // }
-  // if (publicationsError) {
-  //   return <div>Error loading publications</div>;
-  // }
   async function fetchMetadata() {
     if (!profileData?.profile?.metadata) return;
     let metadataPath = profileData?.profile?.metadata;
@@ -84,37 +80,28 @@ export default function profilePage({}: Props) {
     }
 
     const jsonObj = await (await fetch(metadataPath)).json();
+    if (!jsonObj) return;
     const name = jsonObj.name;
     const cover_picture = jsonObj.cover_picture;
     const bio = jsonObj.bio;
-    if (name) setUserName(name);
-    if (cover_picture) setUserCoverImage(cover_picture);
-    if (bio) setUserBio(bio);
-    // console.log("name: ", name, " bio: ", bio, " cover pic: ", cover_picture);
+    if (name && userName != name) setUserName(name);
+    if (cover_picture && usercoverImage != cover_picture)
+      setUserCoverImage(cover_picture);
+    if (bio && userbio != bio) setUserBio(bio);
   }
-
-  async function updatUI() {
+  async function updateProfile() {
     if (!id) return;
-    // console.log("in 0");
     const profile = fetcher<ProfileQuery, ProfileQueryVariables>(
       ProfileDocument,
       {
         request: { handle: id },
       }
     );
-    // console.log("in 1");
     profileData = await profile();
-    // console.log("in 2");
-    const publications = fetcher<PublicationsQuery, PublicationsQueryVariables>(
-      PublicationsDocument,
-      {
-        request: { profileId: profileData.profile?.id },
-      }
-    );
-    // console.log("in 3");
-    publicationsData = await publications();
-    // console.log("in 4");
-    if (profileData.profile) {
+    if (
+      profileData.profile &&
+      (profileDataState == undefined || profileDataState !== profileData)
+    ) {
       setProfileDataState(profileData);
       // @ts-ignore
       if (profileData.profile.picture?.original?.url) {
@@ -127,18 +114,35 @@ export default function profilePage({}: Props) {
         }
       }
     }
-    if (publicationsData.publications) {
+    await fetchMetadata();
+  }
+  async function updatePublications() {
+    if (!id) return;
+    if (profileData == undefined) return;
+    const publications = fetcher<PublicationsQuery, PublicationsQueryVariables>(
+      PublicationsDocument,
+      {
+        request: {
+          profileId: profileData.profile?.id,
+          publicationTypes: [PublicationTypes.Post],
+        },
+      }
+    );
+    publicationsData = await publications();
+    if (
+      publicationsData.publications &&
+      publicationsDataState !== publicationsData
+    ) {
       setPublicationsDataState(publicationsData);
     }
-    await fetchMetadata();
-    // @ts-ignore
   }
-
   useEffect(() => {
-    updatUI();
-  });
-  // console.log("profileData: ", profileData);
-  if (profileData?.profile) {
+    updateProfile();
+  }, [profileDataState, userName, usercoverImage, userbio, profileData]);
+  useEffect(() => {
+    updatePublications();
+  }, [publicationsDataState, profileData]);
+  if (profileDataState?.profile) {
     return (
       <div className={styles.profileContainer}>
         <div className={styles.profileContentContainer}>
@@ -200,7 +204,7 @@ export default function profilePage({}: Props) {
                 ></MediaRenderer>
               )}
 
-              {profileQuery.data?.defaultProfile?.id ===
+              {customProfile?.defaultProfile?.id ===
                 profileDataState.profile.id && (
                 <div className={styles.editingButtons}>
                   <Link href={"/setProfileImage"}>
@@ -227,7 +231,7 @@ export default function profilePage({}: Props) {
                 className={styles.profilePictureContainer}
               ></MediaRenderer>
 
-              {profileQuery.data?.defaultProfile?.id ===
+              {customProfile?.defaultProfile?.id ===
                 profileDataState?.profile?.id && (
                 <div>
                   <Link href={"/setProfileImage"}>
@@ -278,7 +282,7 @@ export default function profilePage({}: Props) {
               </Link>
             </p>
           )}
-          {profileQuery.data?.defaultProfile?.id !==
+          {customProfile?.defaultProfile?.id !==
             profileDataState?.profile?.id &&
             (profileDataState?.profile?.isFollowedByMe ? (
               <Web3Button
@@ -313,14 +317,12 @@ export default function profilePage({}: Props) {
             {loadingPublications ? (
               <div>Loading Publications</div>
             ) : publicationsDataState?.publications?.items ? (
-              publicationsDataState?.publications.items.map((publication) =>
-                publication.__typename == "Post" ? (
-                  <FeedPost
-                    publication={publication}
-                    key={publication.id}
-                  ></FeedPost>
-                ) : null
-              )
+              publicationsDataState?.publications.items.map((publication) => (
+                <FeedPost
+                  publication={publication}
+                  key={publication.id}
+                ></FeedPost>
+              ))
             ) : (
               <p> No post Loaded for this profile</p>
             )}
@@ -333,9 +335,6 @@ export default function profilePage({}: Props) {
       <div className={styles.profileContainer}>
         <div className={styles.profileContentContainer}>
           <h3 className={styles.profileName}>Loading profile...</h3>
-          <h3 className={styles.profileName}>
-            if it took much time, please try to refresh the page
-          </h3>
         </div>
       </div>
     );

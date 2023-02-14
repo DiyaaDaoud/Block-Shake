@@ -56,19 +56,20 @@ export default function SignInButton({}: Props) {
   let profileNotifications: NotificationsQuery | undefined =
     readNotifications(address);
   let customSeenNotifications = readSeenNotifications(address);
-  console.log("         address: ", address);
-  console.log("         currentUser: ", currentUser);
-  console.log("         notifs: ", notifs);
-  console.log("         notifsNum: ", notifsNum);
-  console.log("         seenNotifsNum: ", seenNotifsNum);
-  console.log("         customProfileQuery: ", customProfileQuery);
-  console.log("         profileNotifications: ", profileNotifications);
-  console.log("         customSeenNotifications: ", customSeenNotifications);
-  console.log("         isSignedInQuery.data: ", isSignedInQuery.data);
-  console.log("         accessToken: ", accessToken);
-  console.log("----------------------------------------------------------");
+  // console.log("         address: ", address);
+  // console.log("         currentUser: ", currentUser);
+  // console.log("         notifs: ", notifs);
+  // console.log("         notifsNum: ", notifsNum);
+  // console.log("         seenNotifsNum: ", seenNotifsNum);
+  // console.log("         customProfileQuery: ", customProfileQuery);
+  // console.log("         profileNotifications: ", profileNotifications);
+  // console.log("         customSeenNotifications: ", customSeenNotifications);
+  // console.log("         isSignedInQuery.data: ", isSignedInQuery.data);
+  // console.log("         accessToken: ", accessToken);
+  // console.log("----------------------------------------------------------");
 
   async function updateNotifs() {
+    if (!address || !accessToken) return;
     if (customProfileQuery !== undefined && customProfileQuery.defaultProfile) {
       const notsQuery = fetcher<
         NotificationsQuery,
@@ -131,6 +132,7 @@ export default function SignInButton({}: Props) {
     }
   }
   async function updateSeenNotifs() {
+    if (!address || !accessToken) return;
     if (customSeenNotifications !== undefined) {
       setSeenNotifsNum(customSeenNotifications);
       return;
@@ -153,6 +155,7 @@ export default function SignInButton({}: Props) {
   useEffect(() => {
     updateCustomProfile();
   }, [
+    address,
     customProfileQuery,
     currentUser,
     address,
@@ -161,10 +164,10 @@ export default function SignInButton({}: Props) {
   ]);
   useEffect(() => {
     updateNotifs();
-  }, [profileNotifications, notifs, notifsNum]);
+  }, [address, profileNotifications, notifs, notifsNum]);
   useEffect(() => {
     updateSeenNotifs();
-  }, [customSeenNotifications, seenNotifsNum]);
+  }, [address, customSeenNotifications, seenNotifsNum]);
 
   if (!address) {
     return <ConnectWallet colorMode="light" className={styles.connectButton} />;

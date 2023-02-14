@@ -4,9 +4,11 @@ import { NotificationsQuery, ReactionTypes } from "../graphql/generated";
 import styles from "../styles/userNotifications.module.css";
 type NotificationPreviewArgs = {
   notification: NotificationsQuery["notifications"]["items"][0];
+  alert: boolean;
 };
 export default function NotificationPreview({
   notification,
+  alert,
 }: NotificationPreviewArgs) {
   if (notification.__typename == "NewCollectNotification") {
     const collector =
@@ -23,18 +25,21 @@ export default function NotificationPreview({
       : "https://ipfs.io/ipfs/QmeK4BXjQUTNka1pRTmWjURDEGVXC7E8uEB8xUsD2DGz2c?filename=blank-profile-picture-ga739fc683_1280.png";
     return (
       <div className={styles.NotificationPreviewContainer}>
-        <MediaRenderer
-          src={collectorPic}
-          className={styles.profilePreviewPicture}
-        ></MediaRenderer>
-        <Link
-          href={{
-            pathname: `/profile/publication/[publicationId]-collect`,
-            query: { publicationId: `${collectedPublicationId}` },
-          }}
-        >
-          {collector} has collected your {collectedPubType || "publication"}.
-        </Link>
+        <div className={styles.NotificationPreviewContent}>
+          <MediaRenderer
+            src={collectorPic}
+            className={styles.profilePreviewPicture}
+          ></MediaRenderer>
+          <Link
+            href={{
+              pathname: `/profile/publication/[publicationId]-collect`,
+              query: { publicationId: `${collectedPublicationId}` },
+            }}
+          >
+            {collector} has collected your {collectedPubType || "publication"}.
+          </Link>
+        </div>
+        <div className={styles.alertContainer}> {alert ? "🔺" : ""} </div>
       </div>
     );
   }
@@ -50,18 +55,21 @@ export default function NotificationPreview({
       : "https://ipfs.io/ipfs/QmeK4BXjQUTNka1pRTmWjURDEGVXC7E8uEB8xUsD2DGz2c?filename=blank-profile-picture-ga739fc683_1280.png";
     return (
       <div className={styles.NotificationPreviewContainer}>
-        <MediaRenderer
-          src={commentorPic}
-          className={styles.profilePreviewPicture}
-        ></MediaRenderer>
-        <Link
-          href={{
-            pathname: `/profile/publication/[publicationId]-comment`,
-            query: { publicationId: `${pubId}` },
-          }}
-        >
-          {commentor} has commented on your {pubType || "publication"}.
-        </Link>
+        <div className={styles.NotificationPreviewContent}>
+          <MediaRenderer
+            src={commentorPic}
+            className={styles.profilePreviewPicture}
+          ></MediaRenderer>
+          <Link
+            href={{
+              pathname: `/profile/publication/[publicationId]-comment`,
+              query: { publicationId: `${pubId}` },
+            }}
+          >
+            {commentor} has commented on your {pubType || "publication"}.
+          </Link>
+        </div>
+        <div className={styles.alertContainer}> {alert ? "🔺" : ""} </div>
       </div>
     );
   }
@@ -105,18 +113,21 @@ export default function NotificationPreview({
       : "https://ipfs.io/ipfs/QmeK4BXjQUTNka1pRTmWjURDEGVXC7E8uEB8xUsD2DGz2c?filename=blank-profile-picture-ga739fc683_1280.png";
     return (
       <div className={styles.NotificationPreviewContainer}>
-        <MediaRenderer
-          src={userPic}
-          className={styles.profilePreviewPicture}
-        ></MediaRenderer>
-        <Link
-          href={{
-            pathname: `/profile/publication/[publicationId]-mirror`,
-            query: { publicationId: `${pubId}` },
-          }}
-        >
-          {user} has mirrored your {pubType || "publication"}.
-        </Link>
+        <div className={styles.NotificationPreviewContent}>
+          <MediaRenderer
+            src={userPic}
+            className={styles.profilePreviewPicture}
+          ></MediaRenderer>
+          <Link
+            href={{
+              pathname: `/profile/publication/[publicationId]-mirror`,
+              query: { publicationId: `${pubId}` },
+            }}
+          >
+            {user} has mirrored your {pubType || "publication"}.
+          </Link>
+        </div>
+        <div className={styles.alertContainer}> {alert ? "🔺" : ""} </div>
       </div>
     );
   }
@@ -134,18 +145,21 @@ export default function NotificationPreview({
       : "https://ipfs.io/ipfs/QmeK4BXjQUTNka1pRTmWjURDEGVXC7E8uEB8xUsD2DGz2c?filename=blank-profile-picture-ga739fc683_1280.png";
     return (
       <div className={styles.NotificationPreviewContainer}>
-        <MediaRenderer
-          src={userPic}
-          className={styles.profilePreviewPicture}
-        ></MediaRenderer>
-        <Link
-          href={{
-            pathname: `/profile/publication/[publicationId]-comment`,
-            query: { publicationId: `${pubId}` },
-          }}
-        >
-          {user} has {reaction} your {pubType || "publication"}.
-        </Link>
+        <div className={styles.NotificationPreviewContent}>
+          <MediaRenderer
+            src={userPic}
+            className={styles.profilePreviewPicture}
+          ></MediaRenderer>
+          <Link
+            href={{
+              pathname: `/profile/publication/[publicationId]-comment`,
+              query: { publicationId: `${pubId}` },
+            }}
+          >
+            {user} has {reaction} your {pubType || "publication"}.
+          </Link>
+        </div>
+        <div className={styles.alertContainer}> {alert ? "🔺" : ""} </div>
       </div>
     );
   }

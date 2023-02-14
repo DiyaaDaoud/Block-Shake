@@ -30,25 +30,6 @@ export default function userNotifications() {
   const customNotifications = readNotifications(address);
   const customProfile = readProfileQuery(address);
   let customSeenNotifications = readSeenNotifications(address);
-  const {
-    data: notifsData,
-    isLoading: notifsLoading,
-    isError: notifsError,
-  } = useNotificationsQuery(
-    {
-      request: {
-        profileId:
-          customProfile?.defaultProfile?.id ||
-          profileQuery.data?.defaultProfile?.id,
-      },
-    },
-    {
-      enabled: !!(
-        customProfile?.defaultProfile?.id ||
-        profileQuery.data?.defaultProfile?.id
-      ),
-    }
-  );
   async function setAsRead(num: number) {
     if (!sdk) return;
     if (!address) return;
@@ -62,7 +43,8 @@ export default function userNotifications() {
       num
     );
   }
-  async function updateUI() {
+
+  async function updateNotifications() {
     if (!address) return;
     if (
       !customProfile?.defaultProfile?.id &&
@@ -70,7 +52,7 @@ export default function userNotifications() {
     )
       return;
     if (!sdk) return;
-    if (!customNotifications?.notifications) {
+    if (customNotifications == undefined) {
       const notsQuery = fetcher<
         NotificationsQuery,
         NotificationsQueryVariables
@@ -83,13 +65,26 @@ export default function userNotifications() {
       });
       const newNotifs = await notsQuery();
       if (newNotifs.notifications) {
-        // console.log("newNotifs: ", newNotifs);
         setNotifs(newNotifs);
         storeNotifications(newNotifs, address);
       }
     } else {
-      setNotifs(customNotifications);
+      if (
+        notifs?.notifications.pageInfo.totalCount !==
+        customNotifications.notifications.pageInfo.totalCount
+      ) {
+        setNotifs(customNotifications);
+      }
     }
+  }
+  async function updateSeenNotifications() {
+    if (!address) return;
+    if (
+      !customProfile?.defaultProfile?.id &&
+      !profileQuery.data?.defaultProfile
+    )
+      return;
+    if (!sdk) return;
     if (customSeenNotifications == undefined) {
       const notificationsContract = await sdk.getContractFromAbi(
         NOTIFICATIONS_HELPER_ADDRESS,
@@ -104,18 +99,27 @@ export default function userNotifications() {
         storeSeenNotifications(notifsFromContract, address);
       }
     } else {
-      setSeenNotifsNum(customSeenNotifications);
+      if (seenNotifsNum !== customSeenNotifications) {
+        setSeenNotifsNum(customSeenNotifications);
+      }
     }
   }
   useEffect(() => {
-    updateUI();
-  });
-  // if (notifsLoading) return <div>loading</div>;
-  // if (notifsError) return <div>Error</div>;
-  if (!notifs?.notifications) return <div>Loading Notifications</div>;
-  // console.log("notifs: ", notifs);
+    updateNotifications();
+  }, [customNotifications, notifs]);
+  useEffect(() => {
+    updateSeenNotifications();
+  }, [customSeenNotifications, seenNotifsNum]);
+
+  if (!notifs?.notifications)
+    return (
+      <div className={styles.container}>
+        <div className={styles.headerContainer}>
+          <h3 className={styles.hint}>Loading Notifications ...</h3>
+        </div>
+      </div>
+    );
   if (notifs?.notifications.items && seenNotifsNum) {
-    // console.log("notifications are:", notifsData);
     return (
       <div className={styles.container}>
         <div className={styles.headerContainer}>
@@ -147,11 +151,20 @@ export default function userNotifications() {
           </Web3Button>
         </div>
         <div className={styles.notificationsContainer}>
-          {notifs.notifications.items.map((notification) => {
+          {notifs.notifications.items.map((notification, index) => {
             // @ts-ignore
             return (
               <NotificationPreview
                 notification={notification}
+                alert={
+                  index <
+                  (notifs.notifications.pageInfo.totalCount ||
+                    notifs.notifications.items.length) -
+                    seenNotifsNum
+                    ? true
+                    : false
+                }
+                key={notification.notificationId}
               ></NotificationPreview>
             );
           })}
