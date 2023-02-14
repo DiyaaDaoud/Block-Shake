@@ -113,13 +113,14 @@ export default function SignInButton({}: Props) {
       console.log("no access token!");
       return;
     }
-    customProfileQuery = readProfileQuery(address);
     if (currentUser != address) {
       setCurrentUser(address);
       return;
     }
-    const refreshedAccessToken = await refreshAccessToken();
-    if (!refreshedAccessToken) return;
+    customProfileQuery = readProfileQuery(address);
+
+    // const refreshedAccessToken = await refreshAccessToken();
+    // if (!refreshedAccessToken) return;
     if (customProfileQuery == undefined) {
       if (profileQuery.isLoading || profileQuery.isError || !profileQuery.data)
         return;
@@ -232,6 +233,10 @@ export default function SignInButton({}: Props) {
       </div>
     );
   }
+  if (customProfileQuery == undefined && profileQuery.data?.defaultProfile) {
+    storeProfileQuery(profileQuery.data, address);
+    customProfileQuery = profileQuery.data;
+  }
   if (customProfileQuery?.defaultProfile) {
     return (
       <div className={styles.container}>
@@ -314,5 +319,5 @@ export default function SignInButton({}: Props) {
       </div>
     );
   }
-  return <div>Something went wrong mate!</div>;
+  return <div className={styles.hint}>Something went wrong mate!</div>;
 }
