@@ -1,0 +1,101 @@
+.headerContainer {
+  height: 64px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 99999;
+  background-color: rgb(87, 30, 96);
+  border-bottom: 1px solid white;
+}
+
+.logo {
+  height: 50px;
+  width: 80px;
+  margin-left: 16px;
+  border-radius: 10px;
+}
+.rightSection {
+  width: 25%;
+  height: 100%;
+  position: absolute;
+  align-items: right;
+  justify-content: right;
+  display: flex;
+  flex-direction: row;
+  margin-left: 75%;
+}
+.leftSection {
+  width: 25%;
+  margin-right: 75%;
+  position: absolute;
+}
+.midSection {
+  width: 50%;
+  margin-left: 25%;
+  margin-right: 25%;
+  position: absolute;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  flex-direction: row;
+}
+.left {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  margin-left: 16px;
+}
+
+.right {
+  margin-right: 16px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+.searchCompContiner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+.searchText {
+  border-radius: 16px;
+  border: 1px solid rgb(0, 0, 0);
+  height: 40px;
+  padding: 8px;
+  /* justify-content: center; */
+  text-align: center;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  font-size: small;
+  width: min-content;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+.selector {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+.selectOption {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  font-size: medium;
+  color: white;
+}
+.searchButton {
+  border-radius: 16px;
+  border: 1px solid rgb(0, 0, 0);
+  padding: 8px;
+}
+.connectWallet {
+  color: rgb(87, 30, 96);
+}
